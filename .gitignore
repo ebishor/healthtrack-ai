@@ -1,0 +1,19 @@
+# Virtual environment
+.venv/
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Application logs may contain sensitive health information
+logs/*.jsonl
+
+# Editor files
+.vscode/
+.idea/

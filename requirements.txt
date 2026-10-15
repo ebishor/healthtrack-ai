@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+pydantic-settings
+openai
+pwdlib[argon2]
+PyJWT
+pytest
+httpx
+python-dotenv
