@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>HealthTrack AI | Clinical Decision Support</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f3f6fa;
+            color: #243247;
+            line-height: 1.6;
+        }
+
+        header {
+            background: #123b5d;
+            color: white;
+            padding: 24px 20px;
+        }
+
+        .header-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: #dbe8f2;
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 32px auto;
+            padding: 0 20px;
+        }
+
+        .notice {
+            background: #fff8e6;
+            border: 1px solid #efd58c;
+            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e0e7ef;
+            border-radius: 10px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 3px 12px rgba(20, 45, 70, 0.04);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #123b5d;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-weight: 600;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font: inherit;
+            background: white;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: 2px solid #8bc5f2;
+            border-color: #2476ad;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 22px;
+            padding: 12px 22px;
+            background: #176b87;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #10536b;
+        }
+
+        button:disabled {
+            background: #8a9aa8;
+            cursor: not-allowed;
+        }
+
+        .helper-text {
+            color: #5d6b7a;
+            font-size: 13px;
+        }
+
+        .message {
+            display: none;
+            padding: 14px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+        }
+
+        .error {
+            display: block;
+            color: #842029;
+            background: #f8d7da;
+            border: 1px solid #f1aeb5;
+        }
+
+        .loading {
+            display: block;
+            color: #123b5d;
+            background: #e7f1fb;
+            border: 1px solid #b6d4fe;
+        }
+
+        .result-section {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid #e0e7ef;
+        }
+
+        .result-section h3 {
+            color: #176b87;
+            margin-bottom: 8px;
+        }
+
+        .diagnosis {
+            border: 1px solid #dbe5ed;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .diagnosis h4 {
+            margin: 0 0 8px;
+        }
+
+        .red-flags {
+            background: #fff0f0;
+            border: 2px solid #d9534f;
+            border-left: 6px solid #b42318;
+            border-radius: 8px;
+            padding: 18px;
+        }
+
+        .red-flags h3 {
+            color: #a61b1b;
+            margin-top: 0;
+        }
+
+        .red-flags li {
+            margin-bottom: 8px;
+        }
+
+        .disclaimer {
+            font-size: 13px;
+            color: #5d6b7a;
+            background: #f5f7fa;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px 20px;
+            color: #5d6b7a;
+            font-size: 13px;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 650px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full-width {
+                grid-column: auto;
+            }
+
+            .card {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1>HealthTrack AI</h1>
+            <p>AI-assisted clinical decision support for healthcare professionals</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="notice" aria-label="Clinical safety notice">
+            <strong>Clinical decision-support prototype.</strong>
+            AI-generated results are suggestions for qualified healthcare
+            professionals to review. They are not definitive diagnoses or
+            treatment orders.
+        </section>
+
+        <section class="card">
+            <h2>Patient Assessment</h2>
+
+            <p class="helper-text">
+                Enter only the clinical information needed for this assessment.
+                Use fictional data while testing this prototype.
+            </p>
+
+            <div id="status-message"
+                 class="message"
+                 role="status"
+                 aria-live="polite"></div>
+
+            <form id="assessment-form">
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="patient_age">Patient age</label>
+                        <input
+                            id="patient_age"
+                            name="patient_age"
+                            type="number"
+                            min="0"
+                            max="120"
+                            step="1"
+                            placeholder="e.g. 35"
+                        >
+                    </div>
+
+                    <div class="field">
+                        <label for="symptom_duration">Symptom duration</label>
+                        <input
+                            id="symptom_duration"
+                            name="symptom_duration"
+                            type="text"
+                            maxlength="200"
+                            placeholder="e.g. 3 days"
+                        >
+                    </div>
+
+                    <div class="field full-width">
+                        <label for="symptoms">Symptoms *</label>
+                        <textarea
+                            id="symptoms"
+                            name="symptoms"
+                            minlength="5"
+                            maxlength="3000"
+                            required
+                            placeholder="Describe the reported symptoms..."
+                        ></textarea>
+                    </div>
+
+                    <div class="field full-width">
+                        <label for="medical_history">
+                            Relevant medical history
+                        </label>
+                        <textarea
+                            id="medical_history"
+                            name="relevant_medical_history"
+                            maxlength="1500"
+                            placeholder="Enter relevant history, if known..."
+                        ></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="current_medications">
+                            Current medications
+                        </label>
+                        <textarea
+                            id="current_medications"
+                            name="current_medications"
+                            maxlength="1000"
+                            placeholder="Enter medications, if known..."
+                        ></textarea>
+                    </div>
+
+                    <div class="field">
+                        <label for="allergies">Allergies</label>
+                        <textarea
+                            id="allergies"
+                            name="allergies"
+                            maxlength="1000"
+                            placeholder="Enter allergies, if known..."
+                        ></textarea>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-button">
+                    Generate Assessment
+                </button>
+            </form>
+        </section>
+
+        <section id="results-card" class="card" hidden>
+            <h2>Clinical Assessment Results</h2>
+
+            <div id="summary-section" class="result-section">
+                <h3>Summary</h3>
+                <p id="result-summary"></p>
+            </div>
+
+            <div id="diagnoses-section" class="result-section">
+                <h3>Potential Diagnoses</h3>
+                <div id="diagnoses-list"></div>
+            </div>
+
+            <div class="result-section">
+                <h3>Further Evaluation</h3>
+                <ul id="evaluation-list"></ul>
+            </div>
+
+            <div class="result-section">
+                <h3>Management Considerations</h3>
+                <ul id="management-list"></ul>
+            </div>
+
+            <div class="result-section red-flags" role="region" aria-labelledby="red-flags-heading">
+                <h3 id="red-flags-heading">⚠️ Red Flags — Review Carefully</h3>
+                <p>
+                    Review these warnings promptly. If severe or emergency symptoms
+                    are present, follow appropriate emergency-care procedures.
+                </p>
+                <ul id="red-flags-list"></ul>
+            </div>
+
+            <div class="result-section">
+                <h3>Disclaimer</h3>
+                <p id="result-disclaimer" class="disclaimer"></p>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        HealthTrack AI · Prototype for clinical decision support
+    </footer>
+    <script>
+    const assessmentForm = document.getElementById("assessment-form");
+    const submitButton = document.getElementById("submit-button");
+    const statusMessage = document.getElementById("status-message");
+    const resultsCard = document.getElementById("results-card");
+
+    function showMessage(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = `message ${type}`;
+    }
+
+    function renderList(elementId, items) {
+        const list = document.getElementById(elementId);
+        list.replaceChildren();
+
+        if (!Array.isArray(items) || items.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "No information provided for this section.";
+            list.appendChild(li);
+            return;
+        }
+
+        for (const item of items) {
+            const li = document.createElement("li");
+            li.textContent = String(item);
+            list.appendChild(li);
+        }
+    }
+
+    function renderAssessment(data) {
+        document.getElementById("result-summary").textContent =
+            data.summary || "No summary provided.";
+
+        const diagnosesList = document.getElementById("diagnoses-list");
+        diagnosesList.replaceChildren();
+
+        for (const diagnosis of data.potential_diagnoses || []) {
+            const card = document.createElement("article");
+            card.className = "diagnosis";
+
+            const heading = document.createElement("h4");
+            heading.textContent = diagnosis.name || "Potential diagnosis";
+
+            const reasoning = document.createElement("p");
+            reasoning.textContent =
+                `Reasoning: ${diagnosis.reasoning || "Not provided"}`;
+
+            const urgency = document.createElement("p");
+            urgency.textContent =
+                `Suggested urgency: ${diagnosis.urgency || "Not specified"}`;
+
+            card.append(heading, reasoning, urgency);
+
+            const supportingHeading = document.createElement("p");
+            supportingHeading.textContent = "Supporting findings:";
+            card.appendChild(supportingHeading);
+
+            const supportingList = document.createElement("ul");
+            for (const item of diagnosis.supporting_findings || []) {
+                const li = document.createElement("li");
+                li.textContent = item;
+                supportingList.appendChild(li);
+            }
+            card.appendChild(supportingList);
+
+            const missingHeading = document.createElement("p");
+            missingHeading.textContent = "Missing information:";
+            card.appendChild(missingHeading);
+
+            const missingList = document.createElement("ul");
+            for (const item of diagnosis.missing_information || []) {
+                const li = document.createElement("li");
+                li.textContent = item;
+                missingList.appendChild(li);
+            }
+            card.appendChild(missingList);
+
+            diagnosesList.appendChild(card);
+        }
+
+        if (!data.potential_diagnoses ||
+            data.potential_diagnoses.length === 0) {
+            diagnosesList.textContent =
+                "No potential diagnoses were returned.";
+        }
+
+        renderList("evaluation-list", data.further_evaluation);
+        renderList("management-list", data.management_considerations);
+        renderList("red-flags-list", data.red_flags);
+
+        document.getElementById("result-disclaimer").textContent =
+            data.disclaimer ||
+            "AI-generated decision support requires qualified clinical review.";
+
+        resultsCard.hidden = false;
+    }
+
+    assessmentForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        if (!assessmentForm.reportValidity()) {
+            return;
+        }
+
+        const formData = new FormData(assessmentForm);
+        const requestData = {};
+
+        for (const [key, value] of formData.entries()) {
+            const trimmedValue = value.trim();
+
+            if (key === "patient_age") {
+                if (trimmedValue !== "") {
+                    requestData[key] = Number(trimmedValue);
+                }
+            } else if (trimmedValue !== "") {
+                requestData[key] = trimmedValue;
+            }
+        }
+
+        submitButton.disabled = true;
+        submitButton.textContent = "Generating Assessment...";
+        resultsCard.hidden = true;
+        showMessage(
+            "Please wait while the AI assessment is generated.",
+            "loading"
+        );
+
+        try {
+            const response = await fetch("/api/assess", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const detail = typeof data.detail === "string"
+                    ? data.detail
+                    : "Please check the submitted information.";
+                throw new Error(detail);
+            }
+
+            renderAssessment(data);
+            statusMessage.className = "message";
+            statusMessage.textContent = "";
+            statusMessage.style.display = "none";
+
+            resultsCard.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        } catch (error) {
+            showMessage(
+                error.message ||
+                "Unable to generate an assessment. Please try again.",
+                "error"
+            );
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = "Generate Assessment";
+        }
+    });
+</script>
+</body>
+</html>

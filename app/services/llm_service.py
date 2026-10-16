@@ -63,7 +63,7 @@ async def generate_assessment(
     # Create the asynchronous client for this request.
     client = AsyncOpenAI(
         api_key=OPENAI_API_KEY,
-        timeout=20.0,
+        timeout=90.0,
         max_retries=1,
     )
 
