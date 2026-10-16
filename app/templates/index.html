@@ -245,7 +245,55 @@
             professionals to review. They are not definitive diagnoses or
             treatment orders.
         </section>
+        <section class="card" id="auth-card">
+            <h2>Healthcare Professional Login</h2>
+            <p class="helper-text">
+                Log in or create a clinician account to use the assessment tool.
+            </p>
 
+            <form id="auth-form">
+                <div class="field">
+                    <label for="auth-username">Username</label>
+                    <input
+                        id="auth-username"
+                        name="username"
+                        type="text"
+                        minlength="3"
+                        maxlength="50"
+                        autocomplete="username"
+                        required
+                    >
+                </div>
+
+                <div class="field">
+                    <label for="auth-password">Password</label>
+                    <input
+                        id="auth-password"
+                        name="password"
+                        type="password"
+                        minlength="12"
+                        maxlength="128"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" id="login-button">
+                    Log In
+                </button>
+
+                <button type="button" id="register-button">
+                    Create Clinician Account
+                </button>
+
+                <button type="button" id="logout-button" hidden>
+                    Log Out
+                </button>
+            </form>
+
+            <p id="auth-status" class="message" role="status"
+               aria-live="polite"></p>
+        </section>
         <section class="card">
             <h2>Patient Assessment</h2>
 
@@ -386,6 +434,133 @@
     const statusMessage = document.getElementById("status-message");
     const resultsCard = document.getElementById("results-card");
 
+        const authForm = document.getElementById("auth-form");
+    const authUsername = document.getElementById("auth-username");
+    const authPassword = document.getElementById("auth-password");
+    const loginButton = document.getElementById("login-button");
+    const registerButton = document.getElementById("register-button");
+    const logoutButton = document.getElementById("logout-button");
+    const authStatus = document.getElementById("auth-status");
+
+    let accessToken = null;
+
+    function showAuthMessage(message, isError = false) {
+        authStatus.textContent = message;
+        authStatus.className = isError ? "message error" : "message";
+        authStatus.style.display = "block";
+    }
+
+    function updateAuthUI(isAuthenticated, username = "") {
+        assessmentForm
+            .querySelectorAll("input, textarea, button")
+            .forEach((element) => {
+                element.disabled = !isAuthenticated;
+            });
+
+        loginButton.hidden = isAuthenticated;
+        registerButton.hidden = isAuthenticated;
+        logoutButton.hidden = !isAuthenticated;
+        authUsername.disabled = isAuthenticated;
+        authPassword.disabled = isAuthenticated;
+
+        if (isAuthenticated) {
+            showAuthMessage(`Logged in as ${username}.`);
+        } else {
+            showAuthMessage("Please log in or create a clinician account.");
+        }
+    }
+
+    async function loginUser() {
+        const body = new URLSearchParams();
+        body.set("username", authUsername.value.trim());
+        body.set("password", authPassword.value);
+
+        const response = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: body.toString()
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.detail || "Login failed.");
+        }
+
+        accessToken = data.access_token;
+
+        const username = authUsername.value.trim();
+        authPassword.value = "";
+
+        updateAuthUI(true, username);
+    }
+
+    authForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        loginButton.disabled = true;
+        registerButton.disabled = true;
+
+        try {
+            await loginUser();
+        } catch (error) {
+            showAuthMessage(error.message || "Login failed.", true);
+        } finally {
+            loginButton.disabled = false;
+            registerButton.disabled = false;
+        }
+    });
+
+    registerButton.addEventListener("click", async () => {
+        if (!authForm.reportValidity()) {
+            return;
+        }
+
+        loginButton.disabled = true;
+        registerButton.disabled = true;
+
+        try {
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    username: authUsername.value.trim(),
+                    password: authPassword.value
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Account creation failed.");
+            }
+
+            showAuthMessage("Account created. Logging you in...");
+
+            await loginUser();
+        } catch (error) {
+            showAuthMessage(
+                error.message || "Account creation failed.",
+                true
+            );
+        } finally {
+            loginButton.disabled = false;
+            registerButton.disabled = false;
+        }
+    });
+
+    logoutButton.addEventListener("click", () => {
+        accessToken = null;
+        authPassword.value = "";
+        updateAuthUI(false);
+    });
+
+    // Require authentication before using the assessment form.
+    updateAuthUI(false);
+
     function showMessage(message, type) {
         statusMessage.textContent = message;
         statusMessage.className = `message ${type}`;
@@ -511,7 +686,8 @@
             const response = await fetch("/api/assess", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
                 },
                 body: JSON.stringify(requestData)
             });
